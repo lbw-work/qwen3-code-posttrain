@@ -1,0 +1,24 @@
+{
+  "repo": "nvidia/OpenCodeInstruct",
+  "revision": "8f3ba5bafe4d6e8db46082cf7ae6741bc370604d",
+  "source_file": "data/train-00000-of-00050.parquet",
+  "source_sha256": "342757e0c6b706c8f68cf0a867ead5c417d0273726453dbcfc934f5c3c6ca891",
+  "eval_sha256": "a16f69e2168931ada41de942eac5bea64b7398a11f2d93d5c183351d39cd529f",
+  "tokenizer": "Qwen/Qwen3-1.7B-Base",
+  "max_sequence_tokens": 1024,
+  "max_completion_tokens": 512,
+  "decontamination": "reject shared 12-word span; full span for eval prompts of 6-11 words",
+  "counts": {
+    "source_rows": 100000,
+    "not_all_tests_passed": 65267,
+    "train": 26805,
+    "no_top_level_function": 5856,
+    "too_long": 426,
+    "valid": 1386,
+    "format_rejected": 31,
+    "duplicate_prompt": 224,
+    "eval_overlap_rejected": 5
+  },
+  "train_sha256": "df2220b1bf223aa734b22a8e559eea19448c758b75591909c6552c199d5af775",
+  "valid_sha256": "87828d01908a247a4a45185f4ac1abf0dc8553721c0e64bf3909b29e4756ed0f"
+}

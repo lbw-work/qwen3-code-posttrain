@@ -1,0 +1,12 @@
+.venv/
+.idea/
+__pycache__/
+.pytest_cache/
+.DS_Store
+models/
+results/smoke/
+data/raw/
+data/sft/
+data/rl/
+data/preference/
+runs/

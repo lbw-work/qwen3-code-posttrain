@@ -1,0 +1,10 @@
+# 在服务器上先按其 CUDA 版本安装 PyTorch，再安装此文件。
+transformers==5.17.0
+huggingface_hub==1.31.0
+evalplus==0.3.1
+pyarrow==25.0.1
+datasets==5.0.1
+accelerate==1.15.0
+peft==0.21.0
+trl==1.13.0
+bitsandbytes==0.50.2

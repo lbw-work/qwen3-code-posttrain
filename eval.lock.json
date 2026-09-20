@@ -1,0 +1,18 @@
+{
+  "evalplus_version": "0.3.1",
+  "datasets": {
+    "humaneval": {
+      "version": "v0.1.10",
+      "file": "data/evalplus/HumanEvalPlus-v0.1.10.jsonl",
+      "sha256": "42526ec0e7d5f3ee0b06d6ced98f8c8bae3d76519151bfb3d36f79010645bd7f",
+      "count": 164
+    },
+    "mbpp": {
+      "version": "v0.2.0",
+      "file": "data/evalplus/MbppPlus-v0.2.0.jsonl",
+      "sha256": "b54e762755248ca411b523c917fa9f93c07b5ff2966bf60b3917b853926a3dad",
+      "count": 378
+    }
+  },
+  "eval_jsonl_sha256": "a16f69e2168931ada41de942eac5bea64b7398a11f2d93d5c183351d39cd529f"
+}
