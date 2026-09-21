@@ -3,6 +3,7 @@
 import argparse
 import json
 from datetime import datetime, timezone
+from pathlib import Path
 
 import torch
 from datasets import load_dataset
@@ -14,7 +15,12 @@ from generate_eval import ROOT, sha256
 
 
 def checked_data() -> tuple[Path, Path, dict]:
-    """训练前复核数据哈希；否则同名文件变了，阶段比较就失去意义。"""
+    """验证 SFT 的训练、验证数据及其关联评测版本。
+
+    返回 ``(train_jsonl, valid_jsonl, lock)``。训练文件本身与锁内 SHA-256 都要一致，
+    同时当前 eval.jsonl 也必须等于准备数据时的版本；否则即便 loss 正常，实验之间也
+    无法证明使用了同一组训练数据和同一套污染检查目标。
+    """
     folder = ROOT / "data" / "sft"
     lock = json.loads((ROOT / "data" / "sft.lock.json").read_text(encoding="utf-8"))
     train, valid = folder / "train.jsonl", folder / "valid.jsonl"
@@ -27,6 +33,14 @@ def checked_data() -> tuple[Path, Path, dict]:
 
 
 def main() -> None:
+    """运行一次 Full SFT 或 LoRA SFT，并保存可供后续评测的最终模型。
+
+    ``--mode full`` 更新所有 Base 参数，``--mode lora`` 只训练插入线性层的低秩矩阵。
+    两者用同一份 prompt/completion 数据、相同的序列长度与验证规则。SFTTrainer 将一条
+    样本拼成 ``[prompt tokens, completion tokens, EOS]``，并令 prompt 的 labels 为 -100，
+    所以交叉熵只惩罚代码答案。训练结束后保存 final_model 及 training_meta.json；后者
+    是后续评测和最终横向比较追溯来源的依据。
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--mode", choices=("full", "lora"), required=True)
     parser.add_argument("--run-id", help="独立运行编号；默认 UTC 时间")

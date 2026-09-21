@@ -14,6 +14,18 @@ MODELS = {
 
 
 def main() -> None:
+    """下载并校验 Base 与参考模型的完整本地快照。
+
+    第一次运行时，函数先向 Hugging Face 查询每个模型当前 ``main`` 指向的
+    Git 提交号，再把这个提交号写进仓库根目录的 ``models.lock.json``。从第二次
+    开始，无论是在本机还是 4090 服务器，都会只使用这个锁定提交号下载。因此
+    ``config.json``、Tokenizer 和权重始终来自同一次发布，实验结果能被复现。
+
+    每个模型下载到 ``models/<名称>`` 后，本函数会确认三个推理必需的配置文件
+    都存在，并确认至少有一个 ``.safetensors`` 权重文件。Qwen 的小模型可能是
+    单个权重文件，大模型可能拆成多个分片；所以检查“至少一个”而不假设具体
+    文件名。成功后打印模型仓库和精确提交号，供实验记录引用。
+    """
     lock_path = ROOT / "models.lock.json"
     locked = json.loads(lock_path.read_text(encoding="utf-8")) if lock_path.exists() else None
     api = HfApi()

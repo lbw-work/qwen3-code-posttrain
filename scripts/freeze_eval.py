@@ -16,7 +16,12 @@ DATA_DIR = ROOT / "data" / "evalplus"
 
 
 def sha256(path: Path) -> str:
-    """用文件内容而非文件名锁定题库；同名文件被改动时也能发现。"""
+    """分块计算文件的 SHA256，用内容而非文件名锁定题库。
+
+    ``eval.lock.json`` 保存的是这个返回值。以后即使某个缓存文件仍叫原来的
+    名字，只要内容被升级、替换或损坏，哈希值就会不同。每次只读取 1 MiB，
+    避免大题库文件被一次性读入内存。
+    """
     digest = hashlib.sha256()
     with path.open("rb") as stream:
         for block in iter(lambda: stream.read(1024 * 1024), b""):
@@ -25,6 +30,22 @@ def sha256(path: Path) -> str:
 
 
 def main() -> None:
+    """把 EvalPlus 的两套公开题目和隐藏测试快照固定为本项目的评测基线。
+
+    该函数只能在一个新实验的最开始运行一次：若 ``eval.jsonl`` 或锁文件已经
+    存在就立即报错，防止中途换题而让不同训练阶段的分数失去可比性。它做三件
+    事：
+
+    1. 调用 EvalPlus 读取 HumanEval+ 和 MBPP+，并把官方缓存的测试数据复制到
+       ``data/evalplus``；测试用例不混入训练数据。
+    2. 写出 ``eval.jsonl``。每行只保留生成时需要的 ``prompt``、函数入口名和
+       题目 ID；评分脚本再根据锁定快照取隐藏测试，因此模型不会看到答案。
+    3. 写出 ``eval.lock.json``，记录 EvalPlus 版本、两套数据版本、题目数及每个
+       文件的 SHA256，作为之后所有 Base/SFT/RL 评测的共同契约。
+
+    写清单时先写临时文件，完成后用 ``os.replace`` 原子替换，避免意外中断留下
+    半份 ``eval.jsonl``。项目已存在上述文件时，阅读代码即可，不应重新运行它。
+    """
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     manifest = ROOT / "eval.jsonl"
     if manifest.exists() or (ROOT / "eval.lock.json").exists():

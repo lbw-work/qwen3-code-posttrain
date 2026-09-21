@@ -8,6 +8,13 @@ from generate_eval import ROOT, sha256
 
 
 def main() -> None:
+    """把 EvalPlus 的逐题 JSON 压缩为一份不可混淆的 pass@1 摘要。
+
+    这不是再次运行测试。它读取 score_eval.py 已写好的结果，检查题目 ID 集合恰好
+    等于冻结清单、每题恰好一份生成，然后计数同时通过 base tests 和 plus tests 的题。
+    因为每题只生成一次，``passed / total`` 就是 pass@1。结果还保存原始判分文件的
+    SHA-256，之后 compare_eval.py 可验证摘要没有指向被替换的逐题结果。
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("run_dir", type=Path)
     args = parser.parse_args()

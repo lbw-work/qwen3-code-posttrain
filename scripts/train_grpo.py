@@ -14,11 +14,23 @@ from train_common import TimeBudget, locked_jsonl, new_run, save_meta, sft_adapt
 
 
 def execution_reward(completions: list[str], tests: list[list[str]], **kwargs) -> list[float]:
-    """TRL 将每个 prompt 复制多次生成；tests 也按相同顺序复制。"""
+    """把 TRL 生成的多份代码交给 Docker 测试，返回与 completion 等长的 [0,1] 分数。
+
+    GRPO 会把一个 prompt 复制 ``num_generations`` 次，因此这里的 tests 已按同样顺序重复。
+    返回第 i 个分数必须对应第 i 段代码；score_batch 用“通过测试数 / 总测试数”作为密集
+    奖励，随后 GRPO 在同一道题的四个候选答案内部做相对标准化。
+    """
     return score_batch(completions, tests)
 
 
 def main() -> None:
+    """从同一 LoRA SFT 起点运行基于可执行测试奖励的 GRPO。
+
+    每个训练 batch 有 4 个 prompt，每个 prompt 采样 4 份最多 256 token 的代码；Docker
+    对每份代码运行该训练样本自己的测试。GRPO 不训练 value head，而是比较同一题四个候选
+    的相对奖励，鼓励组内高分代码。``beta=0`` 是单卡显存取舍：不额外驻留 reference；这
+    不改变所有路线共享 SFT 起点的实验约束。EvalPlus 测试从不进入此奖励函数。
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--sft-run", required=True)
     parser.add_argument("--run-id")

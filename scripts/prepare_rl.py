@@ -12,11 +12,23 @@ from generate_eval import ROOT, sha256
 
 
 def load_sft_rows(path: Path) -> dict[str, dict]:
+    """读取一个 SFT JSONL，并按上游 ``source_id`` 建立随机访问索引。
+
+    RL 数据不重新挑选题目，而是从已经通过 SFT 过滤的样本中取题干和单元测试。
+    返回 ``{source_id: sft_row}``，主函数可据此保留原来的训练/验证归属。
+    """
     with path.open(encoding="utf-8") as stream:
         return {row["source_id"]: row for row in map(json.loads, stream)}
 
 
 def main() -> None:
+    """从 SFT 同一原始 Parquet 提取 PPO/GRPO 可用的训练测试。
+
+    先用 SHA-256 确认参数给出的 Parquet 正是 SFT 用过的那一份，再读 SFT 的 train/valid
+    行，保证不会把验证题移动回训练。每个测试必须是字符串、可被 Python AST 解析、数量
+    在 1--20 之间。输出只含 ``prompt`` 与 ``tests``；它不含 EvalPlus 测试，也不含标准
+    答案，故 GRPO 的执行奖励无法泄漏正式评测答案。
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-file", type=Path, required=True, help="prepare_sft.py 使用的同一 Parquet 文件")
     args = parser.parse_args()

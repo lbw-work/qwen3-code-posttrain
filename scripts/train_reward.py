@@ -13,6 +13,13 @@ from train_common import TimeBudget, locked_jsonl, new_run, save_meta
 
 
 def main() -> None:
+    """从冻结偏好对训练一个给 PPO 用的标量奖励模型。
+
+    模型输入是 ``prompt + answer`` 的 token 序列，输出单个 score。RewardTrainer 对同一题
+    的 chosen/rejected 分别前向，优化 ``-log(sigmoid(r_chosen-r_rejected))``，只要求好答案
+    比坏答案分更高。Base 主干通过 LoRA 训练，额外的 ``score`` 线性头由 modules_to_save
+    显式保存；否则下次加载会只剩适配器而丢掉打分头。
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run-id")
     parser.add_argument("--max-steps", type=int, default=-1)

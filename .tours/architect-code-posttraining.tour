@@ -1,0 +1,116 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "Qwen3 代码后训练架构 — 学习路线",
+  "description": "面向想在训练前读懂数据、训练、评测闭环的学习者；按实际执行依赖而非文件名排序。",
+  "ref": "main",
+  "steps": [
+    {
+      "file": "README.md",
+      "line": 12,
+      "title": "先建立一张实验地图",
+      "description": "先看分叉关系：Base 是基线；Full SFT 独立训练；LoRA SFT 是 DPO、PPO、GRPO 的共同起点。读后续文件时始终追问一件事：本阶段的输入模型和输出模型分别是什么。"
+    },
+    {
+      "file": "scripts/download_models.py",
+      "line": 16,
+      "title": "所有路线从锁定权重开始",
+      "description": "首次运行把模型仓库的 main 解析为不可变提交号并写入 models.lock.json；以后只下载该提交。这里是复现实验的第一个锚点。"
+    },
+    {
+      "file": "scripts/generate_eval.py",
+      "line": 36,
+      "title": "评测题先冻结再读取",
+      "description": "verified_tasks 先检查 eval.jsonl 和两份官方题库的哈希，再返回题目。理解它，你就知道为什么每个阶段不能私自换题。"
+    },
+    {
+      "file": "scripts/generate_eval.py",
+      "line": 58,
+      "title": "统一生成路径",
+      "description": "这里区分完整模型和 LoRA 适配器。重点看 [1,L] 输入如何经 generate 变为 [1,L+N]，以及为什么只保存 N 个新增 token。"
+    },
+    {
+      "file": "scripts/score_eval.py",
+      "line": 13,
+      "title": "不可信代码的执行边界",
+      "description": "docker_command 是模型输出唯一允许被执行的地方。读挂载、禁网、只读根文件系统和资源限制，理解安全边界为何属于评测正确性的一部分。"
+    },
+    {
+      "file": "scripts/summarize_eval.py",
+      "line": 10,
+      "title": "pass@1 从哪里来",
+      "description": "摘要脚本不跑新测试，只验证题目集合和生成次数，再统计同时通过 base 与 plus 测试的题。它把逐题证据变成可比较指标。"
+    },
+    {
+      "file": "scripts/prepare_sft.py",
+      "line": 36,
+      "title": "先理解污染检查",
+      "description": "eval_ngrams 与 overlaps_eval 构建评测题连续词索引。它不是语义去重，但能阻止明显题干复制进入训练。"
+    },
+    {
+      "file": "scripts/prepare_sft.py",
+      "line": 69,
+      "title": "SFT 样本怎样留下来",
+      "description": "prepare 是数据管线核心：测试全过、代码块、AST、函数、重合、重复、长度依次筛选；最后形成 prompt/completion 与稳定训练验证划分。"
+    },
+    {
+      "file": "scripts/train_sft.py",
+      "line": 17,
+      "title": "训练前的数据契约",
+      "description": "checked_data 把训练和验证数据的 SHA-256 与评测版本绑定。之后所有训练入口都有等价校验，防止比较中途换数据。"
+    },
+    {
+      "file": "scripts/train_sft.py",
+      "line": 35,
+      "title": "Full SFT 与 LoRA SFT 的共同骨架",
+      "description": "阅读这段前半：同一数据、同一 token 长度、prompt 标签掩码。再看 mode=lora 时插入的低秩矩阵，理解两条基线唯一应有的训练差异。"
+    },
+    {
+      "file": "scripts/train_common.py",
+      "line": 26,
+      "title": "三条偏好路线为什么能公平比较",
+      "description": "sft_adapter 强制 DPO、PPO、GRPO 从同一个 LoRA SFT final_model 分叉；TimeBudget 则给 DPO/GRPO 可比较的墙钟上限。"
+    },
+    {
+      "file": "scripts/prepare_preference.py",
+      "line": 16,
+      "title": "偏好对先变成代码对",
+      "description": "python_code 拒绝说明文字和非函数代码。随后 main 只保留 Python 功能正确性偏好对，并以与 SFT 相同的思路去重和防污染。"
+    },
+    {
+      "file": "scripts/train_dpo.py",
+      "line": 15,
+      "title": "DPO：直接使用 chosen 与 rejected",
+      "description": "先看 load_sft_copy 的 policy/reference 双副本，再看 main 中的 DPOTrainer。核心是比较两份答案相对 reference 的 log probability，不需要单独奖励模型。"
+    },
+    {
+      "file": "scripts/train_reward.py",
+      "line": 15,
+      "title": "奖励模型：给答案一个标量",
+      "description": "它用同一偏好对训练 r(chosen) 大于 r(rejected)。注意 score 头必须随 LoRA 保存；这是 PPO 的唯一外部奖励来源。"
+    },
+    {
+      "file": "scripts/train_ppo.py",
+      "line": 18,
+      "title": "PPO 先读三个数学函数",
+      "description": "按 action_logprobs、gae、ppo_loss 的顺序读。先搞清 token 概率的错位关系，再看优势估计，最后看 probability ratio 的裁剪。"
+    },
+    {
+      "file": "scripts/train_ppo.py",
+      "line": 83,
+      "title": "PPO 的完整 rollout 与更新",
+      "description": "这段把 policy、冻结 reference、冻结奖励模型和 value head 放到一起。先采样，再记 old_logp/奖励，最后两次更新；读懂它即可区分经典 RLHF 和 DPO。"
+    },
+    {
+      "file": "scripts/train_grpo.py",
+      "line": 16,
+      "title": "GRPO：真实测试代替奖励模型",
+      "description": "GRPO 将同题多份代码送到隔离执行奖励，再在同组内部比较相对分数。继续跳到 code_reward.py 可查看为什么候选代码不会在训练宿主机执行。"
+    },
+    {
+      "file": "scripts/compare_eval.py",
+      "line": 15,
+      "title": "最后只比较可证明一致的结果",
+      "description": "读完这里，你应能自己审计一张最终 pass@1 表：阶段是否齐全、题库与生成参数是否相同、逐题结果是否仍是摘要当初引用的那一份。"
+    }
+  ]
+}

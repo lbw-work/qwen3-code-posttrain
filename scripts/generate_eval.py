@@ -20,6 +20,12 @@ MAX_NEW_TOKENS = 512
 
 
 def sha256(path: Path) -> str:
+    """计算文件内容的 SHA-256。
+
+    参数是一个实际文件路径，返回 64 位十六进制摘要。这里按 1 MiB 分块读取，
+    因此即使以后评测数据很大，也不会把整份文件一次装进内存。它不是业务逻辑，
+    而是整个实验可比性的门卫：同名文件只要内容变了，摘要就会变。
+    """
     digest = hashlib.sha256()
     with path.open("rb") as stream:
         for block in iter(lambda: stream.read(1024 * 1024), b""):
@@ -28,7 +34,13 @@ def sha256(path: Path) -> str:
 
 
 def verified_tasks() -> list[dict]:
-    """每次推理先验哈希；有人改过题目时立即停止，避免成绩混在一起。"""
+    """读取并验证本次要生成的全部评测题。
+
+    返回的每个字典至少有 ``suite``、``task_id``、``prompt``、``entry_point``。
+    调用顺序是：先校验总清单 ``eval.jsonl``，再校验两份 EvalPlus 原始题库，
+    最后才解析题目。任何一步不一致都抛异常，而不是带着被改过的题继续跑，
+    因为那会让不同模型的 pass@1 无法比较。
+    """
     lock = json.loads((ROOT / "eval.lock.json").read_text(encoding="utf-8"))
     manifest = ROOT / "eval.jsonl"
     if sha256(manifest) != lock["eval_jsonl_sha256"]:
@@ -44,6 +56,14 @@ def verified_tasks() -> list[dict]:
 
 
 def main() -> None:
+    """执行一次只生成、不执行代码的统一推理。
+
+    输入是阶段名和模型目录；输出是 ``results/<stage>/<run-id>/``。完整模型直接加载，
+    而含 ``adapter_config.json`` 的目录被识别为 LoRA 适配器，需先加载冻结的 Base
+    再叠加增量权重。对每道题，模型输入 ``prompt`` 的 token 张量 ``[1, L]``，
+    ``generate`` 返回 ``[1, L+N]``，代码只保存后面的 ``N`` 个新 token。这里绝不
+    执行模型输出；执行属于 score_eval.py 的受限 Docker 阶段。
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--stage", choices=STAGES, required=True)
     parser.add_argument("--model", type=Path, required=True, help="完整模型目录")

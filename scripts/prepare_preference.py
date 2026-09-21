@@ -14,7 +14,13 @@ from prepare_sft import CODE_BLOCK, eval_ngrams, overlaps_eval, words
 
 
 def python_code(text: str) -> str | None:
-    """只接受完整代码或单个 Python 代码块，避免把说明文字训练成答案。"""
+    """规范化一份偏好答案；无法作为 Python 函数答案时返回 None。
+
+    输入可以是裸代码或完整的一个 `````python`` 代码块。先移除 UTF-8 BOM 和首尾空白，
+    再解开代码块；AST 解析成功且模块顶层至少有一个 ``def`` 才接受。这样 DPO/RM 看到
+    的 chosen、rejected 都是“可作为函数题答案的代码”，不会把解释性自然语言误当目标。
+    返回时统一补一个换行，令 token 化和文件哈希稳定。
+    """
     text = text.lstrip("\ufeff").strip()
     block = CODE_BLOCK.fullmatch(text)
     if block:
@@ -29,6 +35,13 @@ def python_code(text: str) -> str | None:
 
 
 def main() -> None:
+    """把上游偏好 JSONL 冻结为 DPO 与奖励模型共用的数据集。
+
+    每行只允许 Python + Functional Correctness/FC；随后规范 chosen/rejected、排除相同
+    答案、检测评测题重合、按题干去重、检查两支答案都不超过 1024 token。保留的数据用
+    同一题干哈希作稳定 95/5 train/valid 划分。最后的锁记录来源名字和全部摘要，因此
+    DPO 与 Reward Model 不会悄悄使用不同版本的偏好对。
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", type=Path, required=True, help="每行含 input/prompt、chosen、rejected 的 JSONL")
     parser.add_argument("--source-name", required=True, help="数据集名字和固定版本，写入锁文件")

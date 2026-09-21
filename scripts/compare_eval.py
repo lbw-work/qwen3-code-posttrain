@@ -13,6 +13,12 @@ ORDER = ("base", "reference", "full_sft", "lora_sft", "dpo", "ppo", "grpo")
 
 
 def read_run(folder: Path) -> dict:
+    """读取并严格验证一个正式评测运行，返回写入最终表格的标准化记录。
+
+    检查范围包括：目录属于 results、config 与 summary 的阶段/评测哈希一致、不是冒烟测试、
+    生成参数仍为固定贪心 512 token，以及每套逐题结果的 SHA-256 等于摘要记录。只有这些
+    前提同时成立，某个阶段的 pass@1 才可与其它阶段放在一张表中。
+    """
     folder = folder.resolve()
     if not folder.is_relative_to((ROOT / "results").resolve()):
         raise ValueError(f"不是本项目的结果目录：{folder}")
@@ -47,6 +53,12 @@ def read_run(folder: Path) -> dict:
 
 
 def main() -> None:
+    """汇总 Base、Full SFT、LoRA SFT、DPO、PPO、GRPO 的最终评测。
+
+    调用者显式传入每个阶段的结果目录，函数拒绝重复阶段、缺失阶段或不同 eval.jsonl 版本。
+    通过验证后，按固定顺序写 JSON 全量证据和 Markdown pass@1 表。它不计算新分数，只把
+    已验证的原始结果组织为最终横向对比，因此不会意外选择“最新但参数不同”的一次运行。
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("run_dirs", nargs="+", type=Path, help="每阶段一个 results/<stage>/<run-id> 目录")
     parser.add_argument("--comparison-id", help="输出目录名；默认 UTC 时间")

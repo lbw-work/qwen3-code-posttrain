@@ -10,6 +10,12 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def score_batch(completions: list[str], tests: list[list[str]]) -> list[float]:
+    """安全地给一批候选代码打执行分，返回每个样本的通过比例。
+
+    输入的两个列表按位置一一对应；函数将它们序列化为 JSON 标准输入，启动一次受限 Docker
+    容器，并由 worker 再为每份候选代码启动独立 Python 子进程。Docker 只读、禁网且不挂载
+    权重或训练目录；返回值长度必须等于输入长度，否则宁可报错也不让 GRPO 错配奖励。
+    """
     if len(completions) != len(tests):
         raise ValueError("候选代码与测试必须一一对应")
     samples = [{"code": code, "tests": cases} for code, cases in zip(completions, tests, strict=True)]

@@ -29,6 +29,12 @@ print(json.dumps({"passed": passed, "total": len(tests)}))
 
 
 def main() -> None:
+    """在容器内逐样本运行候选代码，输出一个与输入等长的 JSON 分数列表。
+
+    外层 worker 永不直接 exec 候选代码，而是为每个样本启动 ``python -I -c CHILD``；CHILD
+    又为每条测试重建 namespace，并设置 1 秒 alarm。这样单条测试污染全局变量、无限循环、
+    打印大量日志或异常退出时，只影响该候选代码。失败与超时统一给 0，避免训练进程崩溃。
+    """
     samples = json.load(sys.stdin)
     scores = []
     for sample in samples:

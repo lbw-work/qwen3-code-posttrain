@@ -13,7 +13,12 @@ from train_common import TimeBudget, locked_jsonl, new_run, save_meta, sft_adapt
 
 
 def load_sft_copy(adapter, trainable: bool):
-    """两份权重起点相同；policy 可训练，reference 从始至终冻结。"""
+    """从锁定 Base 加载一份 LoRA SFT 策略副本。
+
+    ``trainable=True`` 的副本是 policy，会接收梯度；False 的副本是 reference，只提供
+    初始策略的 token 对数概率。两者从同一适配器起点加载，而不是共享同一个对象，避免
+    policy 更新时 reference 也被意外改变。
+    """
     base = AutoModelForCausalLM.from_pretrained(
         ROOT / "models" / "base", dtype=torch.bfloat16,
         attn_implementation="sdpa", local_files_only=True,
@@ -22,6 +27,13 @@ def load_sft_copy(adapter, trainable: bool):
 
 
 def main() -> None:
+    """运行 DPO：对每题的 chosen/rejected 直接优化偏好差，而不训练奖励模型。
+
+    输入为一条经过验证的 LoRA SFT 运行和冻结的 preference 数据。TRl 会分别计算 policy
+    与 frozen reference 对 chosen/rejected 的序列 log probability；目标推动“chosen 相对
+    rejected 的优势”大于 reference 时的优势。``beta=0.1`` 控制偏离 SFT 起点的强度。
+    验证 loss 选择最佳 checkpoint，完整 EvalPlus 只在训练结束后使用。
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--sft-run", required=True, type=str)
     parser.add_argument("--run-id")

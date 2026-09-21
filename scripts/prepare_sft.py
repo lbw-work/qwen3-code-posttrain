@@ -25,12 +25,21 @@ WORD = re.compile(r"[a-z0-9_]+")
 
 
 def words(text: str) -> list[str]:
-    """只为找重复题而归一化；原始训练文本不经过这种改写。"""
+    """把文本转为只用于去重的标准词序列。
+
+    此函数小写化并只保留字母、数字、下划线；例如标点、大小写差异不会影响重合判断。
+    返回值绝不写回训练集，模型仍看到原始题干和原始代码，因此它不会破坏代码格式。
+    """
     return WORD.findall(text.casefold())
 
 
 def eval_ngrams(tasks: list[dict]) -> dict[int, set[tuple[str, ...]]]:
-    """长题干取 12 连词；短题干取完整题干，避免短题复制漏检。"""
+    """预先建立评测题干的连续词索引，供污染检查复用。
+
+    对长度至少 12 的题干，记录所有 12 词片段；对 6--11 词的短题，记录完整题干。
+    返回结构按片段长度分组，例如 ``{12: {(...), ...}, 8: {(...), ...}}``。短于 6 词
+    的题信息太少，不做自动排除。这是精确文本重合检查，不是语义相似度模型。
+    """
     result: dict[int, set[tuple[str, ...]]] = {}
     for task in tasks:
         tokens = words(task["prompt"])
@@ -44,6 +53,11 @@ def eval_ngrams(tasks: list[dict]) -> dict[int, set[tuple[str, ...]]]:
 
 
 def overlaps_eval(question: str, ngrams: dict[int, set[tuple[str, ...]]]) -> bool:
+    """判断一个候选题干是否含有任何已冻结评测题的索引片段。
+
+    先将候选题干用 words() 归一化，再对 ngrams 中每一种长度滑窗取片段。只要命中，
+    就返回 True，调用者应拒绝该训练样本，避免把公开评测题直接放入训练数据。
+    """
     tokens = words(question)
     return any(
         tuple(tokens[i:i + size]) in spans
@@ -53,7 +67,15 @@ def overlaps_eval(question: str, ngrams: dict[int, set[tuple[str, ...]]]) -> boo
 
 
 def prepare(source: Path, tokenizer, tasks: list[dict], output: Path) -> dict:
-    """逐批读取 Parquet；只保留单个完整代码块、测试全过的函数题。"""
+    """把一个 OpenCodeInstruct Parquet 分片转换为 SFT train/valid JSONL。
+
+    输入：原始 Parquet、Qwen tokenizer、冻结评测任务、一个不存在的输出目录。
+    输出：``train.jsonl``、``valid.jsonl`` 与按拒绝原因统计的计数。每条记录依次经过
+    测试全过、单 Python 代码块、AST 可解析、含顶层函数、评测重合、重复题干、token
+    长度七道关。保留下来的 ``prompt`` 和 ``completion`` 分开存储，训练器据此将题干
+    标签掩码为 -100，只对代码答案计算 loss。题干哈希的低位决定 5% 验证集，重跑时
+    不会因为源文件遍历顺序变化而换分割。
+    """
     output.mkdir(parents=True, exist_ok=False)
     duplicates = set()
     ngrams = eval_ngrams(tasks)
@@ -124,6 +146,11 @@ def prepare(source: Path, tokenizer, tasks: list[dict], output: Path) -> dict:
 
 
 def main() -> None:
+    """下载或接受固定原始分片，调用 prepare()，并写入数据版本锁。
+
+    锁文件同时记录上游仓库提交号、原始文件摘要、评测清单摘要、过滤结果和两个输出
+    文件摘要。已有输出时故意失败，不静默覆盖；若想重建，必须先人工检查旧版本。
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-file", type=Path, help="已有的原始 Parquet；省略则按固定版本下载")
     args = parser.parse_args()

@@ -16,7 +16,13 @@ from train_common import locked_jsonl, new_run, save_meta, sft_adapter
 
 
 def action_logprobs(logits: torch.Tensor, ids: torch.Tensor, prompt_length: int) -> torch.Tensor:
-    """返回每个新 token 的 logπ(a_t|s_t)，形状 [生成 token 数]。"""
+    """取出 rollout 中每个生成 token 在策略分布下的对数概率。
+
+    ``ids`` 形状为 ``[1, L+T]``，前 L 个是 prompt，后 T 个是模型采样的动作；``logits``
+    形状为 ``[1, L+T, V]``，位置 j 的 V 维向量预测 ids 的 j+1 位置。因此切片从 L-1
+    开始、去掉最后一个无目标位置，得到 ``[T, V]``；再按 actions gather 后返回 ``[T]``。
+    这个错一格，PPO 会把某个 token 的概率归给前一个或后一个动作，训练就失去意义。
+    """
     # logits[0, j] 预测 ids[0, j+1]。因此第一个生成 token
     # ids[0, prompt_length] 对应 logits[0, prompt_length-1]。
     selected = logits[0, prompt_length - 1:-1].float().log_softmax(-1)
@@ -25,7 +31,13 @@ def action_logprobs(logits: torch.Tensor, ids: torch.Tensor, prompt_length: int)
 
 
 def gae(rewards: torch.Tensor, values: torch.Tensor, lam: float = 0.95) -> tuple[torch.Tensor, torch.Tensor]:
-    """从最后一个 token 向前递推优势 A_t，最后状态的 bootstrap 值取 0。"""
+    """用 Generalized Advantage Estimation 为一条回答计算优势与 value target。
+
+    两个输入都是长度 T 的一维张量：rewards 是每个生成 token 的即时奖励，values 是价值头
+    在相应位置的估计。反向递推 ``delta_t=r_t+V_{t+1}-V_t``，再以 lambda 平滑未来残差；
+    末尾没有下一个生成状态，bootstrap value 取 0。返回 ``(advantages, returns)``，其中
+    ``returns = advantages + values``，供策略损失和价值头回归分别使用。
+    """
     advantage = torch.zeros_like(rewards)
     running = rewards.new_zeros(())
     for index in range(len(rewards) - 1, -1, -1):
@@ -41,7 +53,13 @@ def ppo_loss(
     old_values: torch.Tensor, advantages: torch.Tensor, returns: torch.Tensor,
     clip: float = 0.2,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    """PPO clipped policy loss + clipped value loss；仅在本次 rollout 的 token 上计算。"""
+    """计算一条 rollout 的 PPO clipped 策略损失和 clipped 价值损失。
+
+    所有输入是长度 T 的 token 向量。``ratio=exp(new_logp-old_logp)`` 表示策略更新前后给同一
+    动作的概率比例；策略项取未裁剪和裁剪目标中的较小值，禁止一次更新把概率推得太远。
+    价值项同样裁剪新旧 value 的差，并取较大的平方误差，避免 value head 一步追逐噪声。
+    返回 ``(总损失, 脱离计算图的策略损失, 脱离计算图的价值损失)``，后两项仅用于日志。
+    """
     ratio = (new_logp - old_logp).clamp(-20, 20).exp()
     policy = -torch.minimum(
         ratio * advantages, ratio.clamp(1 - clip, 1 + clip) * advantages,
@@ -54,6 +72,7 @@ def ppo_loss(
 
 
 def load_policy(adapter: Path, trainable: bool):
+    """加载 Base + LoRA SFT 为 PPO policy 或冻结 reference，并放到单张 CUDA 卡。"""
     base = AutoModelForCausalLM.from_pretrained(
         ROOT / "models" / "base", dtype=torch.bfloat16,
         attn_implementation="sdpa", local_files_only=True,
@@ -62,6 +81,14 @@ def load_policy(adapter: Path, trainable: bool):
 
 
 def main() -> None:
+    """执行教学版单样本 PPO rollout/update 循环。
+
+    每一步随机取一条 RL prompt，policy 采样一份代码；同一回答分别送进冻结 reference 和
+    冻结奖励模型，得到 token 级 KL 惩罚与末尾的整体 RM 分数。value head 从 policy 最后一
+    层隐藏状态 ``[T,H]`` 输出 ``[T]``；随后用 GAE 产生优势，并对同一 rollout 做两遍 PPO
+    更新。被更新的只有 policy 的 LoRA 参数和 value head，reference/RM 永远冻结。输出的
+    final_model 只含可推理的 policy 适配器，value_head 另存，因为评测不需要它。
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--sft-run", required=True)
     parser.add_argument("--reward-run", required=True)
