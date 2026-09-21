@@ -1,0 +1,59 @@
+{
+  "seed": 20260921,
+  "count_per_dataset": 10,
+  "datasets": {
+    "evaluation": {
+      "available": true,
+      "source": "eval.jsonl",
+      "source_sha256": "a16f69e2168931ada41de942eac5bea64b7398a11f2d93d5c183351d39cd529f",
+      "sample": "data/examples/evaluation.sample.jsonl",
+      "sample_sha256": "3867429b29bb6742cb80643f48dd44184ba9fac2fcc16fae96874e9a039352ec",
+      "schema": [
+        "entry_point",
+        "prompt",
+        "suite",
+        "task_id"
+      ]
+    },
+    "sft": {
+      "available": true,
+      "source": "data/sft/train.jsonl",
+      "source_sha256": "df2220b1bf223aa734b22a8e559eea19448c758b75591909c6552c199d5af775",
+      "sample": "data/examples/sft.sample.jsonl",
+      "sample_sha256": "fb75ab6e733be8bf3d076b3f78f78c43cb982f483b6f5c9b1a572beb2830b273",
+      "schema": [
+        "completion",
+        "completion_tokens",
+        "prompt",
+        "prompt_tokens",
+        "source_id"
+      ]
+    },
+    "preference": {
+      "available": false,
+      "source": "data/preference/train.jsonl",
+      "reason": "尚未冻结；请先完成对应的数据准备脚本"
+    },
+    "rl": {
+      "available": true,
+      "source": "data/rl/train.jsonl",
+      "source_sha256": "7546c589102af12b59df0dbe457c14435dbfa1f79239afc31ab918f284ad3b7b",
+      "sample": "data/examples/rl.sample.jsonl",
+      "sample_sha256": "645457e511038eaf0b7d66dba791d694e7f011d203ee551bb5a309388ec1803f",
+      "schema": [
+        "prompt",
+        "source_id",
+        "tests"
+      ]
+    }
+  },
+  "stages": {
+    "base": "evaluation",
+    "full_sft": "sft",
+    "lora_sft": "sft",
+    "dpo": "preference",
+    "reward_model": "preference",
+    "ppo": "rl",
+    "grpo": "rl"
+  }
+}
