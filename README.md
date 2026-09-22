@@ -63,7 +63,9 @@ python scripts/train_ppo.py --sft-run runs/lora_sft/<编号> --reward-run runs/r
 python scripts/train_grpo.py --sft-run runs/lora_sft/<编号>
 ```
 
-每个训练目录都含 `checkpoints/`、`final_model/`、`training_meta.json`；PPO 还保存价值头和逐步日志。SFT、DPO、奖励模型用各自的验证 loss 选训练检查点，评测集不参与选择。训练脚本要求恰好一张 CUDA 卡，数据和显卡检查在创建运行目录前完成。
+DPO、PPO、GRPO 的训练循环和损失都由本项目的 PyTorch 代码实现，不调用 TRL 训练器：DPO 对同一题的 chosen/rejected 计算 policy 与冻结 reference 的答案概率差；PPO 用奖励模型分数、KL、GAE 和裁剪损失更新 LoRA 与价值头；GRPO 每题采样 4 份代码，用训练题自带测试的通过比例计算组内优势，再做两遍裁剪更新。GRPO 的 `beta=0` 不额外驻留 reference；相同得分的组不更新。SFT 与奖励模型仍使用 TRL。
+
+每次训练独立保存 `final_model/`、`training_meta.json` 和日志；DPO、GRPO 保存中间适配器检查点，PPO 另存价值头。SFT、DPO、奖励模型用各自的验证 loss 选择模型，评测集不参与选择。GRPO 的 `--max-steps` 表示最多采样多少组题目；PPO 的 `--max-steps` 表示最多执行多少条 rollout。训练脚本要求恰好一张 CUDA 卡，数据和显卡检查在创建运行目录前完成。正式单卡 4090 的显存、耗时和收敛仍需服务器小步试跑验证。
 
 ## 所有模型用同一口径评测
 

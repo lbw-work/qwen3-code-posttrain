@@ -1,4 +1,4 @@
-"""DPO、奖励模型、PPO、GRPO 共用的少量路径与数据校验。"""
+"""后训练各阶段共用的路径、数据校验；奖励模型还使用 Trainer 时间回调。"""
 
 import json
 import time
@@ -68,7 +68,7 @@ def save_meta(run: Path, **fields) -> None:
 
 
 class TimeBudget(TrainerCallback):
-    """在 Trainer 的 step 边界停止训练，使各 RL 路线可使用相同墙钟预算。
+    """在奖励模型 Trainer 的 step 边界停止训练，限制墙钟预算。
 
     它不强杀正在进行的一个 step：on_step_end 才设置 ``should_training_stop``，以便
     Trainer 仍能正常保存状态。``time.monotonic`` 不受系统时钟调整影响；实际运行时长
