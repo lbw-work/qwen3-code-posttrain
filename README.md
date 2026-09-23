@@ -38,7 +38,7 @@ python scripts/download_models.py
 
 SFT 数据源是固定版本的 [NVIDIA OpenCodeInstruct](https://huggingface.co/datasets/nvidia/OpenCodeInstruct) 的第一份 100,000 行分片。脚本只保留原数据记录的测试全过、单个 Python 代码块、可解析且含顶层函数的样本，并按题干去重、与公开评测题干做连续词重合检查。当前得到训练 26,805 条、验证 1,386 条；`data/sft.lock.json`、`data/rl.lock.json` 保存源文件与输出哈希。连续词检查不能保证发现所有语义近似题，正式报告应如实注明。
 
-随仓库发布的 SFT 和 RL 数据是从 NVIDIA OpenCodeInstruct（CC BY 4.0）筛选并转换得到的版本；原始仓库、固定提交号、原始分片哈希及转换后的哈希见 `data/sft.lock.json` 和 `data/rl.lock.json`。仓库未包含原始 Parquet 分片。
+随仓库发布的 SFT 和 RL 数据是从 NVIDIA OpenCodeInstruct（[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)）筛选并转换得到的版本；原始仓库、固定提交号、原始分片哈希及转换后的哈希见 `data/sft.lock.json` 和 `data/rl.lock.json`。仓库未包含原始 Parquet 分片。
 
 偏好数据尚未下载。`scripts/export_themis.py` 可从固定提交号的 [Themis-CodePreference](https://huggingface.co/datasets/project-themis/Themis-CodePreference) 导出 Python 功能正确性子集，并把原始类别整数转成可读名称。然后运行：
 
