@@ -5,7 +5,7 @@
 ## 当前状态
 
 - 已实现模型版本锁定、SFT/RL 数据准备、Full SFT、LoRA SFT、DPO、奖励模型、PPO、GRPO、统一生成、Docker 隔离判分和最终对比脚本。
-- 本机完成 Base/参考模型各 1 道题的生成试跑；尚未跑完整 542 题的模型基线，也未在 4090 上训练。训练脚本的接口和小模型数据流已检查，显存与训练收敛仍需服务器实测。
+- Base 已在本机完成全部 542 题的生成与 Docker 判分：HumanEval+ 31/164（18.9%），MBPP+ 214/378（56.6%）。完整逐题记录在 `results/base/20260922T010155Z/`；尚未在 4090 上训练。训练脚本的接口和小模型数据流已检查，显存与训练收敛仍需服务器实测。
 - 公开评测固定为 HumanEval+ v0.1.10（164 题）和 MBPP+ v0.2.0（378 题）。`eval.jsonl` 与官方测试快照的哈希见 `eval.lock.json`。独立自建复核题尚未加入，先不要把现有结果称为最终实验结论。
 - 标准答案直接判分的自检为 HumanEval+ 163/164、MBPP+ 377/378；HumanEval/32 和 Mbpp/255 连题库自带的答案也未通过当前测试。所有模型仍按完整 164/378 题报告，逐题记录保留。
 
@@ -26,15 +26,19 @@
 
 服务器建议 Python 3.11，先按 CUDA 驱动安装匹配的 PyTorch，再安装：
 
+公开仓库随附已处理的 `data/sft/`、`data/rl/`、对应锁文件及 Base 判分结果。
+服务器克隆后无需重新运行 `prepare_sft.py` 或 `prepare_rl.py`；这两个脚本用于从原始数据重新构建，遇到已有数据会停止，以免覆盖冻结版本。
+模型权重没有随 GitHub 仓库上传；服务器运行 `download_models.py`，按 `models.lock.json` 的提交号下载 Base 和参考模型。
+
 ```bash
 python -m pip install -r requirements.txt
 docker build -f Dockerfile.eval -t qwen-code-eval:0.3.1 .
 python scripts/download_models.py
-python scripts/prepare_sft.py
-python scripts/prepare_rl.py --source-file data/raw/opencodeinstruct/data/train-00000-of-00050.parquet
 ```
 
 SFT 数据源是固定版本的 [NVIDIA OpenCodeInstruct](https://huggingface.co/datasets/nvidia/OpenCodeInstruct) 的第一份 100,000 行分片。脚本只保留原数据记录的测试全过、单个 Python 代码块、可解析且含顶层函数的样本，并按题干去重、与公开评测题干做连续词重合检查。当前得到训练 26,805 条、验证 1,386 条；`data/sft.lock.json`、`data/rl.lock.json` 保存源文件与输出哈希。连续词检查不能保证发现所有语义近似题，正式报告应如实注明。
+
+随仓库发布的 SFT 和 RL 数据是从 NVIDIA OpenCodeInstruct（CC BY 4.0）筛选并转换得到的版本；原始仓库、固定提交号、原始分片哈希及转换后的哈希见 `data/sft.lock.json` 和 `data/rl.lock.json`。仓库未包含原始 Parquet 分片。
 
 偏好数据尚未下载。`scripts/export_themis.py` 可从固定提交号的 [Themis-CodePreference](https://huggingface.co/datasets/project-themis/Themis-CodePreference) 导出 Python 功能正确性子集，并把原始类别整数转成可读名称。然后运行：
 

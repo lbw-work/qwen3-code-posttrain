@@ -92,10 +92,13 @@ def prepare(source: Path, tokenizer, tasks: list[dict], output: Path) -> dict:
                     statuses = json.loads(item["tests_execution_status"])
                 except (TypeError, ValueError):
                     statuses = None
+
+                # 测试全过
                 if item["average_test_score"] != 1.0 or not statuses or any(x != "pass" for x in statuses):
                     counts["not_all_tests_passed"] += 1
                     continue
 
+                # 格式检查
                 question = item["input"].strip()
                 response = item["output"].strip()
                 match = CODE_BLOCK.fullmatch(response)
@@ -108,9 +111,13 @@ def prepare(source: Path, tokenizer, tasks: list[dict], output: Path) -> dict:
                 except SyntaxError:
                     counts["syntax_rejected"] += 1
                     continue
+
+                # 含顶层函数
                 if not any(isinstance(node, ast.FunctionDef) for node in syntax.body):
                     counts["no_top_level_function"] += 1
                     continue
+
+                # 评测重合
                 if overlaps_eval(question, ngrams):
                     counts["eval_overlap_rejected"] += 1
                     continue
@@ -122,6 +129,7 @@ def prepare(source: Path, tokenizer, tasks: list[dict], output: Path) -> dict:
                 if key in duplicates:
                     counts["duplicate_prompt"] += 1
                     continue
+
                 # MBPP+ 的题干也是模块级三引号说明，再续写 Python 代码。
                 # 提示与答案分开存储，训练时只对答案 token 算 loss。
                 prompt = f'"""\n{question}\n"""\n\n'

@@ -1,0 +1,21 @@
+{
+  "stage": "base",
+  "model": "/Users/eternity/Desktop/qwen3-code-posttrain/models/base",
+  "eval_sha256": "a16f69e2168931ada41de942eac5bea64b7398a11f2d93d5c183351d39cd529f",
+  "prompt_format": "EvalPlus raw prompt; plain code completion",
+  "generation": {
+    "do_sample": false,
+    "max_new_tokens": 512
+  },
+  "device": "mps",
+  "torch": "2.14.0",
+  "transformers": "5.17.0",
+  "python": "3.11.16",
+  "limit_per_suite": null,
+  "adapter": false,
+  "model_source": {
+    "repo_id": "Qwen/Qwen3-1.7B-Base",
+    "revision": "ea980cb0a6c2ae4b936e82123acc929f1cec04c1",
+    "path": "models/base"
+  }
+}

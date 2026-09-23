@@ -6,7 +6,5 @@ __pycache__/
 models/
 results/smoke/
 data/raw/
-data/sft/
-data/rl/
 data/preference/
 runs/
