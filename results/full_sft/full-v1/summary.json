@@ -1,0 +1,18 @@
+{
+  "stage": "full_sft",
+  "eval_sha256": "a16f69e2168931ada41de942eac5bea64b7398a11f2d93d5c183351d39cd529f",
+  "suites": {
+    "humaneval": {
+      "passed": 67,
+      "total": 164,
+      "pass_at_1": 0.40853658536585363,
+      "result_sha256": "017da2a0a205482c333d88a2fbb0c5509e8cd5df7a0dfb4cf063437965907a47"
+    },
+    "mbpp": {
+      "passed": 229,
+      "total": 378,
+      "pass_at_1": 0.6058201058201058,
+      "result_sha256": "768b731ba980ced60d57d184ec8b3f0b89fd80ee035928950ad681ef01b4f14b"
+    }
+  }
+}
