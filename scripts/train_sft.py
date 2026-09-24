@@ -89,7 +89,9 @@ def main() -> None:
         bf16=True,
         learning_rate=2e-5 if args.mode == "full" else 1e-4,
         lr_scheduler_type="cosine",
-        warmup_ratio=0.03,
+        # 当前固定的 Transformers 版本用小于 1 的 warmup_steps 表示训练总步数的比例。
+        # 0.03 因此仍是前 3% 的优化步用于学习率预热；整数才表示固定步数。
+        warmup_steps=0.03,
         optim="paged_adamw_8bit" if args.mode == "full" else "adamw_torch",
         max_length=1024,
         completion_only_loss=True,
