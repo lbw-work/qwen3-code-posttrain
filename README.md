@@ -5,9 +5,22 @@
 ## 当前状态
 
 - 已实现模型版本锁定、SFT/RL 数据准备、Full SFT、LoRA SFT、DPO、奖励模型、PPO、GRPO、统一生成、Docker 隔离判分和最终对比脚本。
-- Base 已在本机完成全部 542 题的生成与 Docker 判分：HumanEval+ 31/164（18.9%），MBPP+ 214/378（56.6%）。完整逐题记录在 `results/base/20260922T010155Z/`；尚未在 4090 上训练。训练脚本的接口和小模型数据流已检查，显存与训练收敛仍需服务器实测。
+- Base、Full SFT、LoRA SFT 已完成：两次 SFT 均在单张 RTX 4090 上训练，三个模型均在本机对全部 542 题生成代码并用 Docker 判分。逐题生成、判分和独立摘要分别保存在 `results/base/20260922T010155Z/`、`results/full_sft/full-v1/`、`results/lora_sft/lora-v1/`。训练权重未上传到仓库。
+- 当前结果见下图和[训练与评测记录](docs/sft-comparison.md)。DPO、奖励模型、PPO、GRPO 尚未完成正式训练与评测。
 - 公开评测固定为 HumanEval+ v0.1.10（164 题）和 MBPP+ v0.2.0（378 题）。`eval.jsonl` 与官方测试快照的哈希见 `eval.lock.json`。独立自建复核题尚未加入，先不要把现有结果称为最终实验结论。
 - 标准答案直接判分的自检为 HumanEval+ 163/164、MBPP+ 377/378；HumanEval/32 和 Mbpp/255 连题库自带的答案也未通过当前测试。所有模型仍按完整 164/378 题报告，逐题记录保留。
+
+## 已完成阶段的代码通过率
+
+![Base、Full SFT 和 LoRA SFT 在 HumanEval+ 与 MBPP+ 上的 pass@1 对比](docs/assets/sft-comparison.svg)
+
+| 模型 | HumanEval+ | MBPP+ |
+| --- | ---: | ---: |
+| Base | 31/164（18.9%） | 214/378（56.6%） |
+| Full SFT | 67/164（40.9%） | 229/378（60.6%） |
+| LoRA SFT | 82/164（50.0%） | 237/378（62.7%） |
+
+表中使用相同的冻结题集、原始 prompt、贪心解码和严格 EvalPlus+ 测试；每题只生成一次。LoRA SFT 在这两套测试中最高，但这只说明当前训练与评测设置下的表现，不代表其它代码任务也有相同排序。详见[训练配置、逐题结果与局限](docs/sft-comparison.md)。
 
 ## 数据流
 
@@ -51,7 +64,7 @@ python scripts/prepare_preference.py --source data/raw/themis-python-fc.jsonl --
 
 ## 各阶段命令
 
-先跑 SFT；以下 `<编号>` 是脚本输出目录中的运行编号：
+SFT 已在服务器完成；以下命令用于复现训练，`<编号>` 是脚本输出目录中的运行编号：
 
 ```bash
 python scripts/train_sft.py --mode full
@@ -69,7 +82,7 @@ python scripts/train_grpo.py --sft-run runs/lora_sft/<编号>
 
 DPO、PPO、GRPO 的训练循环和损失都由本项目的 PyTorch 代码实现，不调用 TRL 训练器：DPO 对同一题的 chosen/rejected 计算 policy 与冻结 reference 的答案概率差；PPO 用奖励模型分数、KL、GAE 和裁剪损失更新 LoRA 与价值头；GRPO 每题采样 4 份代码，用训练题自带测试的通过比例计算组内优势，再做两遍裁剪更新。GRPO 的 `beta=0` 不额外驻留 reference；相同得分的组不更新。SFT 与奖励模型仍使用 TRL。
 
-每次训练独立保存 `final_model/`、`training_meta.json` 和日志；DPO、GRPO 保存中间适配器检查点，PPO 另存价值头。SFT、DPO、奖励模型用各自的验证 loss 选择模型，评测集不参与选择。GRPO 的 `--max-steps` 表示最多采样多少组题目；PPO 的 `--max-steps` 表示最多执行多少条 rollout。训练脚本要求恰好一张 CUDA 卡，数据和显卡检查在创建运行目录前完成。正式单卡 4090 的显存、耗时和收敛仍需服务器小步试跑验证。
+每次训练独立保存 `final_model/`、`training_meta.json` 和日志；DPO、GRPO 保存中间适配器检查点，PPO 另存价值头。SFT、DPO、奖励模型用各自的验证 loss 选择模型，评测集不参与选择。GRPO 的 `--max-steps` 表示最多采样多少组题目；PPO 的 `--max-steps` 表示最多执行多少条 rollout。训练脚本要求恰好一张 CUDA 卡，数据和显卡检查在创建运行目录前完成。DPO、奖励模型、PPO、GRPO 的正式单卡训练仍需服务器验证。
 
 ## 所有模型用同一口径评测
 
@@ -100,4 +113,4 @@ python -m unittest discover -s tests -v
 python -m compileall -q scripts tests
 ```
 
-这些检查覆盖训练题干去重、PPO token 对齐和优势计算；小模型初始化另验证了 SFT 标签掩码、DPO/奖励模型/GRPO 的训练器输入。它们不代表真实 4090 训练已经跑通。
+这些检查覆盖训练题干去重、PPO token 对齐和优势计算；小模型初始化另验证了 SFT 标签掩码、DPO/奖励模型/GRPO 的训练器输入。它们不能替代尚未完成的 DPO、奖励模型、PPO、GRPO 正式训练。

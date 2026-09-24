@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="460" viewBox="0 0 1120 460" role="img" aria-labelledby="title desc" font-family="Arial, Helvetica, sans-serif">
+<title id="title">Base, Full SFT and LoRA SFT code benchmark comparison</title>
+<desc id="desc">Strict pass at one on HumanEval plus: Base 18.9 percent, Full SFT 40.9 percent, LoRA SFT 50.0 percent. MBPP plus: Base 56.6 percent, Full SFT 60.6 percent, LoRA SFT 62.7 percent.</desc>
+<rect width="1120" height="460" fill="#ffffff"/>
+<text x="42" y="57" font-size="27" font-weight="700" fill="#0f172a">Python function benchmark</text>
+<text x="42" y="86" font-size="16" fill="#475569">Qwen3-1.7B-Base → Full SFT / LoRA SFT · strict EvalPlus+ pass@1</text>
+<rect x="42" y="116" width="500" height="285" rx="16" fill="#f8fafc" stroke="#e2e8f0"/>
+<text x="62" y="151" font-size="19" font-weight="700" fill="#0f172a">HumanEval+</text>
+<text x="430" y="151" font-size="14" fill="#64748b">n = 164</text>
+<line x1="153.0" y1="181" x2="153.0" y2="352" stroke="#e2e8f0"/>
+<text x="153.0" y="377" text-anchor="middle" font-size="12" fill="#64748b">0%</text>
+<line x1="218.8" y1="181" x2="218.8" y2="352" stroke="#e2e8f0"/>
+<text x="218.8" y="377" text-anchor="middle" font-size="12" fill="#64748b">25%</text>
+<line x1="284.5" y1="181" x2="284.5" y2="352" stroke="#e2e8f0"/>
+<text x="284.5" y="377" text-anchor="middle" font-size="12" fill="#64748b">50%</text>
+<line x1="350.2" y1="181" x2="350.2" y2="352" stroke="#e2e8f0"/>
+<text x="350.2" y="377" text-anchor="middle" font-size="12" fill="#64748b">75%</text>
+<line x1="416.0" y1="181" x2="416.0" y2="352" stroke="#e2e8f0"/>
+<text x="416.0" y="377" text-anchor="middle" font-size="12" fill="#64748b">100%</text>
+<text x="62" y="220" font-size="14" fill="#334155">Base</text>
+<rect x="153" y="202" width="49.7" height="26" rx="5" fill="#64748b"/>
+<text x="432" y="220" font-size="14" font-weight="700" fill="#0f172a">18.9%</text>
+<text x="432" y="239" font-size="11" fill="#64748b">31/164</text>
+<text x="62" y="278" font-size="14" fill="#334155">Full SFT</text>
+<rect x="153" y="260" width="107.4" height="26" rx="5" fill="#2563eb"/>
+<text x="432" y="278" font-size="14" font-weight="700" fill="#0f172a">40.9%</text>
+<text x="432" y="297" font-size="11" fill="#64748b">67/164</text>
+<text x="62" y="336" font-size="14" fill="#334155">LoRA SFT</text>
+<rect x="153" y="318" width="131.5" height="26" rx="5" fill="#0d9488"/>
+<text x="432" y="336" font-size="14" font-weight="700" fill="#0f172a">50.0%</text>
+<text x="432" y="355" font-size="11" fill="#64748b">82/164</text>
+<rect x="578" y="116" width="500" height="285" rx="16" fill="#f8fafc" stroke="#e2e8f0"/>
+<text x="598" y="151" font-size="19" font-weight="700" fill="#0f172a">MBPP+</text>
+<text x="966" y="151" font-size="14" fill="#64748b">n = 378</text>
+<line x1="689.0" y1="181" x2="689.0" y2="352" stroke="#e2e8f0"/>
+<text x="689.0" y="377" text-anchor="middle" font-size="12" fill="#64748b">0%</text>
+<line x1="754.8" y1="181" x2="754.8" y2="352" stroke="#e2e8f0"/>
+<text x="754.8" y="377" text-anchor="middle" font-size="12" fill="#64748b">25%</text>
+<line x1="820.5" y1="181" x2="820.5" y2="352" stroke="#e2e8f0"/>
+<text x="820.5" y="377" text-anchor="middle" font-size="12" fill="#64748b">50%</text>
+<line x1="886.2" y1="181" x2="886.2" y2="352" stroke="#e2e8f0"/>
+<text x="886.2" y="377" text-anchor="middle" font-size="12" fill="#64748b">75%</text>
+<line x1="952.0" y1="181" x2="952.0" y2="352" stroke="#e2e8f0"/>
+<text x="952.0" y="377" text-anchor="middle" font-size="12" fill="#64748b">100%</text>
+<text x="598" y="220" font-size="14" fill="#334155">Base</text>
+<rect x="689" y="202" width="148.9" height="26" rx="5" fill="#64748b"/>
+<text x="968" y="220" font-size="14" font-weight="700" fill="#0f172a">56.6%</text>
+<text x="968" y="239" font-size="11" fill="#64748b">214/378</text>
+<text x="598" y="278" font-size="14" fill="#334155">Full SFT</text>
+<rect x="689" y="260" width="159.3" height="26" rx="5" fill="#2563eb"/>
+<text x="968" y="278" font-size="14" font-weight="700" fill="#0f172a">60.6%</text>
+<text x="968" y="297" font-size="11" fill="#64748b">229/378</text>
+<text x="598" y="336" font-size="14" fill="#334155">LoRA SFT</text>
+<rect x="689" y="318" width="164.9" height="26" rx="5" fill="#0d9488"/>
+<text x="968" y="336" font-size="14" font-weight="700" fill="#0f172a">62.7%</text>
+<text x="968" y="355" font-size="11" fill="#64748b">237/378</text>
+<text x="42" y="435" font-size="13" fill="#64748b">Same 542 tasks · one greedy completion per task · 512 new tokens · EvalPlus 0.3.1 · local MPS</text>
+</svg>

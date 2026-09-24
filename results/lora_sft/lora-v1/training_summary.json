@@ -1,0 +1,31 @@
+{
+  "stage": "lora_sft",
+  "run_id": "lora-v1",
+  "base_model": {
+    "repo_id": "Qwen/Qwen3-1.7B-Base",
+    "revision": "ea980cb0a6c2ae4b936e82123acc929f1cec04c1",
+    "path": "models/base"
+  },
+  "sft_lock_sha256": "b741feed36517d40769017c9091470ce9747f14680dc6e7c4425225764d7203f",
+  "train_sha256": "df2220b1bf223aa734b22a8e559eea19448c758b75591909c6552c199d5af775",
+  "valid_sha256": "87828d01908a247a4a45185f4ac1abf0dc8553721c0e64bf3909b29e4756ed0f",
+  "eval_sha256": "a16f69e2168931ada41de942eac5bea64b7398a11f2d93d5c183351d39cd529f",
+  "global_step": 1676,
+  "best_eval_loss": 0.14722761511802673,
+  "training_loss": 0.16062133533431125,
+  "train_runtime_seconds": 8827.6293,
+  "settings": {
+    "num_train_epochs": 1,
+    "max_steps": -1,
+    "per_device_train_batch_size": 1,
+    "gradient_accumulation_steps": 16,
+    "bf16": true,
+    "learning_rate": 0.0001,
+    "max_length": 1024,
+    "completion_only_loss": true,
+    "seed": 42,
+    "optim": "adamw_torch"
+  },
+  "final_weight_file": "adapter_model.safetensors",
+  "final_weight_sha256": "e5e86fdecec8228a46984536feb9942d70bde5f7925d103e3b58d9f32a900ff1"
+}
